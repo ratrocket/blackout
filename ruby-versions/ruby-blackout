@@ -1,0 +1,122 @@
+#!/usr/bin/env ruby
+require 'readline'
+require 'rubygems'  # for the next...
+require 'ruby-prof'
+
+class Board
+  def initialize(zero_piece = "X", one_piece = "O")
+    # My goal would be to find a pattern to calculate which squares need
+    # to be flipped instead of looking up.  Of course, lookups are fast.
+    @moves = Array.new([[1,3], [0,2,4], [1,5], [0,4,6], [1,3,5,7],
+                        [2,4,8], [3,7], [4,6,8], [5,7]])
+    @arr = Array.new(9) { 0 }
+    while self.win?
+      @arr = Array.new(9) { rand(2) }
+    end
+    @zero_piece = zero_piece
+    @one_piece = one_piece
+  end
+
+  def print_board
+    @arr.each_with_index do |e,i|
+      print_piece(e,i)
+      print (i % 3 == 2) ? "\n" : " "
+    end
+  end
+
+  # to do funnier things with the piece printing if desired
+  def print_piece(value, place_position)
+    #print value == 0 ? "X" : "O"
+    #print value == 0 ? "no " : "yes"
+    print value == 0 ? @zero_piece : @one_piece
+  end
+
+  def win?
+    # Addition method
+    #s = @arr.inject(0) { |mem,e| mem + e }
+    #s == 0 || s == 9
+
+    # include? method
+    !@arr.include?(@arr.first == 0 ? 1 : 0)
+
+    # uniq method
+    #@arr.uniq.size == 1
+  end
+
+  def move(i)
+    return false if i < 1 or i > 9
+    i = i - 1
+    @arr[i] = @arr.at(i) == 0 ? 1 : 0
+    @moves.at(i).each do |n|
+      @arr[n] = @arr.at(n) == 0 ? 1 : 0
+    end
+
+  end
+
+  def Board.opening_message
+    puts "***** These are your moves:"
+    puts "1 2 3\n4 5 6\n7 8 9       Now go! ====>\n\n"
+  end
+
+  def Board.closing_message(n)
+    puts "\nB L A  =======>"
+    puts "C K !  ......You won in #{n} moves."
+    puts "O U T  ====>"
+  end
+end
+
+num_moves = 0
+#b = Board.new("no ", "yes")
+#b = Board.new("_", ".")
+b = Board.new
+
+Board.opening_message
+
+until b.win?
+  b.print_board
+  move = Readline::readline("move? (1-9): ", true)
+  #move = rand(9) + 1  # auto-play
+  num_moves += 1 if b.move(move.to_i)
+end
+
+b.print_board
+Board.closing_message(num_moves)
+
+
+__END__
+
+moves_to_win = Array.new
+
+RubyProf.start
+
+plays = 1000000
+i = 0
+while i < plays
+  num_moves = 0
+  b = Board.new
+
+  until b.win?
+    #b.print_board
+    move = rand(9) + 1  # auto-play
+    num_moves += 1 if b.move(move.to_i)
+  end
+  #b.print_board
+  moves_to_win << num_moves
+  i += 1
+end
+
+result = RubyProf.stop
+
+moves_to_win.sort!
+puts "least to win:  #{moves_to_win.first}"
+median = ((moves_to_win.size % 2) == 0) ? 
+  ((moves_to_win.size / 2) + 1) : (((moves_to_win.size + 1) / 2) + 1)
+puts "median to win: #{moves_to_win.at(median)}"
+puts "most to win:   #{moves_to_win.last}"
+avg = (moves_to_win.inject(0) { |mem,e| mem + e }) / (plays / 1.0)
+puts "average to win: #{avg}"
+
+# profiler report
+printer = RubyProf::FlatPrinter.new(result)
+printer.print(STDOUT, 0)
+

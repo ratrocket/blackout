@@ -1,0 +1,80 @@
+#!/usr/bin/env ruby
+
+#
+# I don't think this game is guaranteed to be winnable (sp?)
+#
+
+require 'readline'
+
+class Board
+  attr_reader :board_size
+
+  def initialize(board_size = 3, zero_piece = "X", one_piece = "O")
+    @zero_piece = zero_piece
+    @one_piece = one_piece
+    @board_size = board_size
+    @arr = Array.new(@board_size ** 2) { rand(2) }
+  end
+
+  def print_board
+    @arr.each_with_index do |e,i|
+      print_piece(e,i)
+      print (i % @board_size == @board_size - 1) ? "\n" : " "
+    end
+  end
+
+  def print_piece(value, place_position)
+    print value == 0 ? @zero_piece : @one_piece
+  end
+
+  def win?
+    s = @arr.inject(0) { |mem,e| mem + e }
+    s == 0 || s == @board_size ** 2
+  end
+
+  def move(i)
+    return false if i < 1 or i > @board_size ** 2
+    i = i - 1  # improve clarity
+
+    moves = Array.new
+
+    row = i
+    until row % @board_size == 0
+      row -= 1
+    end
+
+    col = i
+    until col - @board_size < 0
+      col -= @board_size
+    end
+
+    (1..(@board_size)).each do
+      moves << row
+      moves << col
+      row += 1
+      col += @board_size
+    end
+
+    moves.uniq.each do |n|
+      @arr[n] = flip(@arr[n])
+    end
+  end
+
+  private
+
+  def flip(n)
+    (n - 1).abs
+  end
+end
+
+num_moves = 0
+b = Board.new(4, "X", "O")
+
+until b.win?
+  b.print_board  # won't print board if it's a win right off (unlikely)
+  move = Readline::readline("move? (1-#{b.board_size**2}): ", true)
+  #move = rand(b.board_size**2) + 1
+  num_moves += 1 if b.move(move.to_i)
+end
+
+b.print_board
